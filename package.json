@@ -1,0 +1,32 @@
+{
+  "name": "@trace/protect-me",
+  "version": "1.0.0",
+  "description": "TRACE Consumer-facing Protect Me experience: CallShield, ScamShield, Safety Loop, and Transaction Risk Explanation.",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Run test checklist in TEST_CHECKLIST.md\""
+  },
+  "keywords": [
+    "trace",
+    "fraud-prevention",
+    "consumer-safety",
+    "callshield",
+    "scamshield",
+    "safety-loop",
+    "accessibility"
+  ],
+  "author": "Member 3 (Protect Me Team)",
+  "license": "UNLICENSED",
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.0.0"
+  }
+}
