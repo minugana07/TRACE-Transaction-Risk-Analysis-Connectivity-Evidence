@@ -39,7 +39,12 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         zoomControl: true,
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      const cartoApiKey = (import.meta.env.CARTO_API_KEY || import.meta.env.VITE_CARTO_API_KEY || '').trim();
+      const tileUrl = cartoApiKey
+        ? `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoApiKey)}`
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+      L.tileLayer(tileUrl, {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap contributors',
         maxZoom: 19,
       }).addTo(map);
