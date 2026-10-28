@@ -10,6 +10,7 @@ import {
   PhoneCall,
   CheckCircle,
   User,
+  Info,
 } from 'lucide-react';
 
 interface ConsumerSafetyViewProps {
@@ -42,11 +43,17 @@ export const ConsumerSafetyView: React.FC<ConsumerSafetyViewProps> = ({
     onTakeAction(currentAlert.case_id, actionType);
 
     if (actionType === 'CONFIRM_ME') {
-      setFeedbackMessage('Thank you for verifying! Your activity has been confirmed as authorized and marked benign.');
+      setFeedbackMessage(
+        '[Demo Action]: Authorization logged in SQLite audit trail. Case status updated to RESOLVED BENIGN. (No real core banking API connected).'
+      );
     } else if (actionType === 'LOCK_ACCOUNT') {
-      setFeedbackMessage('Urgent: Your account card credentials have been temporarily frozen to prevent unauthorized transfers.');
+      setFeedbackMessage(
+        '[Demo Action]: Emergency freeze request logged in SQLite audit trail. Case status escalated. (In production, this triggers card network API block).'
+      );
     } else {
-      setFeedbackMessage('Callback requested. A fraud resolution specialist will reach out to your registered phone number.');
+      setFeedbackMessage(
+        '[Demo Action]: Security callback request logged in SQLite case notes. (In production, this dispatches a priority ticket to telephony queue).'
+      );
     }
   };
 
@@ -110,8 +117,16 @@ export const ConsumerSafetyView: React.FC<ConsumerSafetyViewProps> = ({
 
           <p className="text-xs text-slate-300 leading-relaxed max-w-3xl">
             Our automated safety shield noticed transfers that differ from your usual pattern.
-            To keep your money safe, please review the activity below and let us know if you made these payments.
+            To keep your money safe, please review the activity below and select the appropriate resolution.
           </p>
+
+          {/* Demonstration Notice */}
+          <div className="flex items-center gap-2 p-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-[11px] text-slate-400">
+            <Info className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+            <span>
+              <b>Workflow Guidance Note:</b> Actions below record your response in the TRACE investigation log and update SQLite case state. External card network APIs and telephone systems are simulated for this demonstration.
+            </span>
+          </div>
 
           {feedbackMessage && (
             <div className="p-3 bg-blue-950/50 border border-blue-500/40 rounded-xl text-xs text-blue-200 flex items-center gap-2">
@@ -120,27 +135,30 @@ export const ConsumerSafetyView: React.FC<ConsumerSafetyViewProps> = ({
             </div>
           )}
 
-          {/* Quick Action Resolution Buttons */}
+          {/* Quick Action Resolution Buttons (Clearly labeled as Demo / Workflow Actions) */}
           <div className="pt-2 flex flex-wrap items-center gap-3">
             <button
               onClick={() => handleActionClick('CONFIRM_ME')}
+              title="Demo action: Records confirmation note and marks case benign in SQLite database"
               className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition"
             >
-              <CheckCircle className="w-4 h-4" /> Yes, I Made These Transfers
+              <CheckCircle className="w-4 h-4" /> Yes, I Made These Transfers (Demo)
             </button>
 
             <button
               onClick={() => handleActionClick('LOCK_ACCOUNT')}
+              title="Demo action: Records lock note and escalates case status in SQLite database"
               className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-rose-600/20 transition"
             >
-              <Lock className="w-4 h-4" /> No! Freeze My Account Now
+              <Lock className="w-4 h-4" /> No! Freeze My Account (Demo)
             </button>
 
             <button
               onClick={() => handleActionClick('CALLBACK')}
+              title="Demo action: Records callback request note in SQLite database"
               className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-2 border border-slate-700 transition"
             >
-              <PhoneCall className="w-4 h-4 text-blue-400" /> Request Security Call
+              <PhoneCall className="w-4 h-4 text-blue-400" /> Request Security Call (Demo)
             </button>
           </div>
         </div>
