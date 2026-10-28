@@ -97,7 +97,7 @@ export class RiskRippleGraphModel {
 
     // Map Directed Edges
     for (const edge of filteredEdges) {
-      const isFlagged = edge.status === 'FLAGGED' || (edge.riskIndicators && edge.riskIndicators.length > 0);
+      const isFlagged = Boolean(edge.status === 'FLAGGED' || (edge.riskIndicators && edge.riskIndicators.length > 0));
       elements.push({
         group: 'edges',
         data: {

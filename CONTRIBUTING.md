@@ -27,7 +27,7 @@ cd backend
 # Or run with the venv python directly:
 .\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 
-# 3. Run automated tests
+# 3. Run automated backend tests (34 tests)
 .\venv\Scripts\python.exe -m pytest tests/ -v
 ```
 Backend API will be accessible at: `http://localhost:8000`  
@@ -45,6 +45,12 @@ npm install
 
 # 3. Start development server with API proxy
 npm run dev
+
+# 4. Run Investigate unit test suite (22 tests)
+node --test --experimental-strip-types src/modules/investigate/tests/run-all-tests.ts
+
+# 5. Build production bundle
+npm run build
 ```
 Frontend will be available at: `http://localhost:5173` (with `/api` automatically proxied to `http://localhost:8000`).
 

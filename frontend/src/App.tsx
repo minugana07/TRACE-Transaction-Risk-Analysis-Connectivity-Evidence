@@ -10,12 +10,16 @@ import {
 } from './services/api';
 import { Header } from './components/Header';
 import { AnalystWorkbench } from './components/Investigate/AnalystWorkbench';
+import { InvestigateModuleView } from './components/Investigate/InvestigateModuleView';
 import { ConsumerSafetyView } from './components/ProtectMe/ConsumerSafetyView';
+import { ProtectMeContainer } from './features/protect-me/components/ProtectMeContainer';
 import { UploadModal } from './components/Common/UploadModal';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw, Network, ShieldCheck, Activity, PhoneCall } from 'lucide-react';
 
 export function App() {
   const [currentMode, setCurrentMode] = useState<'investigate' | 'protect_me'>('investigate');
+  const [investigateSubTab, setInvestigateSubTab] = useState<'workbench' | 'deep_dive'>('workbench');
+  const [protectMeSubTab, setProtectMeSubTab] = useState<'portal' | 'suite'>('portal');
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -179,24 +183,94 @@ export function App() {
             </button>
           </div>
         ) : currentMode === 'investigate' ? (
-          <AnalystWorkbench
-            alerts={alerts}
-            transactions={transactions}
-            activeCaseId={activeCaseId}
-            onSelectCase={handleSelectCase}
-            caseTransactions={caseTransactions}
-            caseNotes={caseNotes}
-            onNoteAdded={handleNoteAdded}
-            onStatusChanged={handleStatusChanged}
-          />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setInvestigateSubTab('workbench')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                    investigateSubTab === 'workbench'
+                      ? 'bg-indigo-600 text-white shadow'
+                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5" /> Analyst Workbench
+                </button>
+                <button
+                  onClick={() => setInvestigateSubTab('deep_dive')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                    investigateSubTab === 'deep_dive'
+                      ? 'bg-indigo-600 text-white shadow'
+                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Network className="w-3.5 h-3.5" /> Connectivity & Geo Matrix
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500 hidden sm:inline">
+                TRACE Core Engine &bull; Shared Investigation Context
+              </span>
+            </div>
+
+            {investigateSubTab === 'workbench' ? (
+              <AnalystWorkbench
+                alerts={alerts}
+                transactions={transactions}
+                activeCaseId={activeCaseId}
+                onSelectCase={handleSelectCase}
+                caseTransactions={caseTransactions}
+                caseNotes={caseNotes}
+                onNoteAdded={handleNoteAdded}
+                onStatusChanged={handleStatusChanged}
+              />
+            ) : (
+              <InvestigateModuleView />
+            )}
+          </div>
         ) : (
-          <ConsumerSafetyView
-            alerts={alerts}
-            activeCaseId={activeCaseId}
-            onSelectCase={handleSelectCase}
-            caseTransactions={caseTransactions}
-            onTakeAction={handleConsumerAction}
-          />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setProtectMeSubTab('portal')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                    protectMeSubTab === 'portal'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" /> Case Guidance & Actions
+                </button>
+                <button
+                  onClick={() => setProtectMeSubTab('suite')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                    protectMeSubTab === 'suite'
+                      ? 'bg-emerald-600 text-white shadow'
+                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <PhoneCall className="w-3.5 h-3.5" /> CallShield & ScamShield Suite
+                </button>
+              </div>
+              <span className="text-[11px] text-slate-500 hidden sm:inline">
+                Citizen Safety &bull; Voice Reader &bull; Interactive Defense
+              </span>
+            </div>
+
+            {protectMeSubTab === 'portal' ? (
+              <ConsumerSafetyView
+                alerts={alerts}
+                activeCaseId={activeCaseId}
+                onSelectCase={handleSelectCase}
+                caseTransactions={caseTransactions}
+                onTakeAction={handleConsumerAction}
+              />
+            ) : (
+              <div className="rounded-xl overflow-hidden border border-slate-800 shadow-xl">
+                <ProtectMeContainer enableLiveBackend={true} apiBaseUrl="" />
+              </div>
+            )}
+          </div>
         )}
       </main>
 

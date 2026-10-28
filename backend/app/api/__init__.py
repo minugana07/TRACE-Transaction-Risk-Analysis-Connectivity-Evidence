@@ -5,6 +5,7 @@ from app.api.explain import router as explain_router
 from app.api.health import router as health_router
 from app.api.transactions import router as transactions_router
 from app.api.upload import router as upload_router
+from app.api.protect_me import router as protect_me_router
 
 api_router = APIRouter(prefix="/api")
 
@@ -14,5 +15,6 @@ api_router.include_router(transactions_router)
 api_router.include_router(alerts_router)
 api_router.include_router(cases_router)
 api_router.include_router(explain_router)
+api_router.include_router(protect_me_router)
 
 __all__ = ["api_router"]

@@ -58,6 +58,29 @@ class Transaction(BaseModel):
     description: Optional[str] = Field(None, description="Transaction reference or memo")
     risk_score: Optional[float] = Field(None, ge=0, le=100, description="Optional transaction-level risk score (0-100)")
 
+    # Member 3 & Member 4 compatibility fields
+    transactionId: Optional[str] = None
+    sourceAccountId: Optional[str] = None
+    targetAccountId: Optional[str] = None
+    location: Optional[Dict[str, Any]] = None
+    riskIndicators: Optional[List[str]] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.transactionId:
+            self.transactionId = self.id
+        if not self.sourceAccountId:
+            self.sourceAccountId = self.sender_id
+        if not self.targetAccountId:
+            self.targetAccountId = self.receiver_id
+        if self.geographic_data and not self.location:
+            self.location = {
+                "latitude": self.geographic_data.latitude or 0.0,
+                "longitude": self.geographic_data.longitude or 0.0,
+                "city": self.geographic_data.city or "Unknown",
+                "country": self.geographic_data.country or "Unknown",
+                "ipAddress": self.geographic_data.ip_address,
+            }
+
 
 class Account(BaseModel):
     id: str = Field(..., description="Unique account identifier, e.g. ACC-101")
@@ -66,6 +89,30 @@ class Account(BaseModel):
     risk_tier: str = Field(RiskTier.LOW.value, description="Current account risk tier")
     account_type: str = Field("INDIVIDUAL", description="INDIVIDUAL, BUSINESS, MERCHANT, or MULE_SUSPECT")
     created_at: str = Field(..., description="ISO 8601 UTC creation date")
+
+    # Member 3 camelCase compatibility
+    accountId: Optional[str] = None
+    accountNumber: Optional[str] = None
+    holderName: Optional[str] = None
+    holderType: Optional[str] = "INDIVIDUAL"
+    createdAt: Optional[str] = None
+    status: Optional[str] = "ACTIVE"
+    riskScore: Optional[float] = 20.0
+    country: Optional[str] = "US"
+    balance: Optional[float] = 5000.0
+    currency: Optional[str] = "USD"
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.accountId:
+            self.accountId = self.id
+        if not self.accountNumber:
+            self.accountNumber = self.account_number
+        if not self.holderName:
+            self.holderName = self.holder_name
+        if not self.holderType:
+            self.holderType = self.account_type
+        if not self.createdAt:
+            self.createdAt = self.created_at
 
 
 class EvidenceItem(BaseModel):
@@ -104,6 +151,41 @@ class Alert(BaseModel):
     created_at: str = Field(..., description="ISO 8601 UTC timestamp")
     updated_at: str = Field(..., description="ISO 8601 UTC timestamp")
 
+    # Member 3 camelCase compatibility fields
+    alertId: Optional[str] = None
+    caseId: Optional[str] = None
+    description: Optional[str] = None
+    riskScore: Optional[float] = None
+    status: Optional[str] = None
+    createdAt: Optional[str] = None
+    updatedAt: Optional[str] = None
+    primaryAccountId: Optional[str] = None
+    relatedAccountIds: Optional[List[str]] = None
+    transactionIds: Optional[List[str]] = None
+    notes: Optional[List[Any]] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.alertId:
+            self.alertId = self.id
+        if not self.caseId:
+            self.caseId = self.case_id
+        if not self.description:
+            self.description = self.summary
+        if self.riskScore is None:
+            self.riskScore = self.risk_score
+        if not self.status:
+            self.status = self.investigation_status
+        if not self.createdAt:
+            self.createdAt = self.created_at
+        if not self.updatedAt:
+            self.updatedAt = self.updated_at
+        if not self.primaryAccountId:
+            self.primaryAccountId = self.customer_id
+        if self.transactionIds is None:
+            self.transactionIds = self.related_transaction_ids
+        if self.relatedAccountIds is None:
+            self.relatedAccountIds = [self.customer_id]
+
 
 class DetectionResult(BaseModel):
     summary: str = Field(..., description="Detection execution overview")
@@ -123,20 +205,70 @@ class InvestigationNote(BaseModel):
     timestamp: str = Field(..., description="ISO 8601 UTC timestamp")
     status_change: Optional[str] = Field(None, description="Optional status change associated with this note")
 
+    # Member 3 camelCase compatibility fields
+    noteId: Optional[str] = None
+    caseId: Optional[str] = None
+    authorId: Optional[str] = None
+    authorName: Optional[str] = None
+    createdAt: Optional[str] = None
+    type: Optional[str] = "ANALYST_INTERPRETATION"
+    content: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.noteId:
+            self.noteId = self.id
+        if not self.caseId:
+            self.caseId = self.case_id
+        if not self.authorId:
+            self.authorId = self.author
+        if not self.authorName:
+            self.authorName = self.author
+        if not self.createdAt:
+            self.createdAt = self.timestamp
+        if not self.content:
+            self.content = self.note
+
 
 class InvestigationNoteCreate(BaseModel):
-    case_id: str
+    case_id: Optional[str] = None
+    caseId: Optional[str] = None
     alert_id: Optional[str] = None
-    author: str = "Lead Analyst"
-    note: str
+    author: Optional[str] = "Lead Analyst"
+    authorName: Optional[str] = None
+    authorId: Optional[str] = None
+    note: Optional[str] = None
+    content: Optional[str] = None
+    type: Optional[str] = "ANALYST_INTERPRETATION"
     status_change: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.case_id and self.caseId:
+            self.case_id = self.caseId
+        if not self.author and self.authorName:
+            self.author = self.authorName
+        elif self.authorName and self.author == "Lead Analyst":
+            self.author = self.authorName
+        if not self.note and self.content:
+            self.note = self.content
+        if not self.content and self.note:
+            self.content = self.note
 
 
 class CaseStatusUpdate(BaseModel):
-    case_id: str
+    case_id: Optional[str] = None
+    caseId: Optional[str] = None
     status: str
-    author: str = "Lead Analyst"
+    author: Optional[str] = "Lead Analyst"
+    updatedBy: Optional[str] = None
     reason: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.case_id and self.caseId:
+            self.case_id = self.caseId
+        if not self.author and self.updatedBy:
+            self.author = self.updatedBy
+        elif self.updatedBy and self.author == "Lead Analyst":
+            self.author = self.updatedBy
 
 
 class AIExplanationRequest(BaseModel):

@@ -96,6 +96,23 @@ class TRACEStore:
             if tx_id in self.transactions_by_id
         ]
 
+    def get_account(self, account_id: str) -> Optional[Account]:
+        if not self.accounts:
+            self.load_default_dataset()
+        if account_id in self.accounts:
+            return self.accounts[account_id]
+        # Return a consistent synthesized account entry if not indexed yet
+        acc = Account(
+            id=account_id,
+            account_number=f"****-{account_id[-4:] if len(account_id) >= 4 else account_id}",
+            holder_name=f"Entity {account_id}",
+            risk_tier=RiskTier.LOW.value,
+            account_type="BUSINESS" if "MERCH" in account_id or "CRYPTO" in account_id else "INDIVIDUAL",
+            created_at="2026-01-01T00:00:00Z",
+        )
+        self.accounts[account_id] = acc
+        return acc
+
 
 # Singleton store instance
 store = TRACEStore()

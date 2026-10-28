@@ -44,8 +44,10 @@ def list_case_notes(case_id: str):
 
 @router.post("/cases/{case_id}/notes", response_model=InvestigationNote)
 def create_case_note(case_id: str, payload: InvestigationNoteCreate):
-    if payload.case_id != case_id:
+    if not payload.case_id or payload.case_id != case_id:
         payload.case_id = case_id
+    if not payload.caseId:
+        payload.caseId = case_id
     note = add_investigation_note(payload)
 
     # Sync in-memory alert status if changed
@@ -53,14 +55,18 @@ def create_case_note(case_id: str, payload: InvestigationNoteCreate):
         alert = store.get_alert_by_case_id(case_id)
         if alert:
             alert.investigation_status = payload.status_change
+            alert.status = payload.status_change
 
     return note
 
 
 @router.post("/cases/{case_id}/status")
+@router.patch("/cases/{case_id}/status")
 def change_case_status(case_id: str, payload: CaseStatusUpdate):
-    if payload.case_id != case_id:
+    if not payload.case_id or payload.case_id != case_id:
         payload.case_id = case_id
+    if not payload.caseId:
+        payload.caseId = case_id
 
     result = update_case_status(payload)
 
@@ -68,8 +74,18 @@ def change_case_status(case_id: str, payload: CaseStatusUpdate):
     alert = store.get_alert_by_case_id(case_id)
     if alert:
         alert.investigation_status = payload.status
+        alert.status = payload.status
 
-    return result
+    return {
+        "success": True,
+        "case_id": case_id,
+        "caseId": case_id,
+        "status": payload.status,
+        "updated_at": result.get("updated_at"),
+        "updatedAt": result.get("updated_at"),
+        "author": payload.author,
+        "reason": payload.reason,
+    }
 
 
 @router.get("/cases/{case_id}/history")

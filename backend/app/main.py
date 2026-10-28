@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
 from app.database import init_db
 from app.store import store
+from trace_engine import detection_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,8 +42,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount API routers
+# Mount Member 1 & Member 4 Core APIs (/api/*)
 app.include_router(api_router)
+
+# Mount Member 2 Detection Engine APIs (/trace/detection/*)
+app.include_router(detection_router)
 
 
 @app.get("/")
@@ -53,6 +57,7 @@ def root():
         "status": "online",
         "docs_url": "/docs",
         "api_prefix": "/api",
+        "detection_prefix": "/trace/detection",
     }
 
 

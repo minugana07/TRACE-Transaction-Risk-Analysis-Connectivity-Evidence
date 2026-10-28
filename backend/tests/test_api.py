@@ -142,3 +142,61 @@ TX-TEST-3,2026-10-28T03:00:00Z,ACC-T1,ACC-T4,9300,USD,ONLINE,COMPLETED,Austin,US
     assert result["transaction_count"] == 3
     assert len(result["alerts"]) >= 1
     assert any("Structuring" in a["title"] for a in result["alerts"])
+
+
+def test_member3_investigate_api_compatibility(client):
+    # Ensure default dataset is loaded
+    store.load_default_dataset()
+
+    # 1. Test account lookup
+    res = client.get("/api/accounts/ACC-101")
+    assert res.status_code == 200
+    acc = res.json()
+    assert "accountId" in acc or "id" in acc
+    assert acc["id"] == "ACC-101"
+
+    # 2. Test transactions by IDs
+    res = client.get("/api/transactions?ids=TX-1001,TX-1002")
+    assert res.status_code == 200
+    txs = res.json()
+    assert len(txs) >= 1
+    assert "transactionId" in txs[0]
+
+    # 3. Test connectivity graph
+    res = client.get("/api/graph/connectivity/ACC-101?hops=2")
+    assert res.status_code == 200
+    graph = res.json()
+    assert "nodes" in graph
+    assert "edges" in graph
+    assert graph["focusAccountId"] == "ACC-101"
+
+    # 4. Test PATCH case status
+    patch_res = client.patch("/api/cases/CASE-2026-001/status", json={"status": "UNDER_REVIEW", "updatedBy": "Analyst-1"})
+    assert patch_res.status_code == 200
+    status_data = patch_res.json()
+    assert status_data["success"] is True
+    assert status_data["status"] == "UNDER_REVIEW"
+
+
+def test_member4_protect_me_api_compatibility(client):
+    # 1. Phone lookup
+    res = client.get("/api/phone-lookup?number=%2B919876543210")
+    assert res.status_code == 200
+    data = res.json()
+    assert "queryNumber" in data
+    assert "status" in data
+
+    # 2. Detection evaluation
+    payload = {
+        "amount": 55000.0,
+        "currency": "INR",
+        "receiverAccountOrVpa": "unknown.scam@axis",
+        "paymentMethod": "UPI",
+        "note": "Urgent refund processing fee",
+    }
+    res = client.post("/api/detect/evaluate", json=payload)
+    assert res.status_code == 200
+    eval_data = res.json()
+    assert "transaction" in eval_data
+    assert "detectionResult" in eval_data
+    assert eval_data["detectionResult"]["riskLevel"] in ["HIGH", "CRITICAL", "MEDIUM"]

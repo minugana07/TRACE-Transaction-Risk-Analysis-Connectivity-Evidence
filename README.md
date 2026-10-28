@@ -1,74 +1,176 @@
-# TRACE - Protect Me Consumer Safety Experience (Member 3)
+# TRACE: Transaction Risk Analysis, Connectivity & Evidence
 
-> **Official Product Name:** The product name is strictly **TRACE** (*Transaction Risk Analysis, Connectivity & Evidence*). All branding, interfaces, and documentation strictly use TRACE.
-
----
-
-## Overview
-
-The **Protect Me** module provides a consumer-facing, highly accessible safety experience for **TRACE**. It empowers consumers, everyday digital payment users, and seniors to:
-1. **Understand Transaction Risks:** Inspect transactions with plain-language explanations of actual `DetectionResult` and `Alert` data rather than cryptic technical codes.
-2. **Ingest Transactions:** Add transactions via manual entry or CSV upload with instant risk evaluation against TRACE detection models.
-3. **Verify Incoming Callers (CallShield):** Screen phone numbers and SMS headers against official verified directories and crowdsourced scam complaints, strictly distinguishing verified sources from unverified reports while never assuming unlisted numbers are safe.
-4. **Learn Digital Payment Defense (ScamShield):** Interactive educational roleplays covering UPI collect requests, utility disconnection threats, work-from-home task scams, and emergency friend impersonation with comprehension explain-back checks.
-5. **Connect Concerns to Evidence (Safety Loop):** Ground user concerns in genuine transaction evidence and detection results from Member 1 without inventing or fabricating connections.
-6. **Accessible to Everyone:** Built with large touch targets (≥44px), high contrast mode, 3-tier text magnification (100%, 115%, 130%), and browser-native Text-to-Speech (TTS) read-aloud support.
+> **TRACE** is an end-to-end, evidence-grounded fraud detection and digital safety platform unifying deep forensic investigation for fraud analysts with accessible self-defense tools for consumers.
 
 ---
 
-## Directory Structure
+## Architecture Overview
 
 ```
-trace-protect-me/
-├── package.json
-├── tsconfig.json
-├── README.md
-├── INTEGRATION.md
-├── TEST_CHECKLIST.md
-└── src/
-    ├── index.ts                      # Public exports
-    ├── contracts/
-    │   ├── transaction.ts            # Member 1 shared contracts (Transaction, Alert, DetectionResult)
-    │   ├── phoneLookup.ts            # CallShield contract (Verified vs Unverified vs Not Found vs Unavailable)
-    │   └── scamShield.ts             # ScamShield interactive scenario & explain-back contracts
-    ├── data/
-    │   ├── mockData.ts               # Isolated demonstration dataset tagged with isSampleDemonstration: true
-    │   ├── curatedPhoneDataset.ts    # Curated phone entries & search engine
-    │   └── scamScenarios.ts          # 4 fictional interactive educational scenarios
-    ├── services/
-    │   ├── apiClient.ts              # Pluggable backend adapter (Member 1 endpoint bridge & offline fallback)
-    │   └── ttsService.ts             # SpeechSynthesis read-aloud accessibility engine
-    ├── context/
-    │   └── AccessibilityContext.tsx  # Text scale, high contrast, and voice state
-    └── components/
-        ├── ProtectMeContainer.tsx    # Root container with responsive tab navigation
-        ├── accessibility/
-        │   ├── AccessibilityBar.tsx  # Accessible toolbar (A/A+/A++, High Contrast, Read Aloud)
-        │   └── VoiceReaderButton.tsx # Per-item speech synthesizer button
-        ├── dashboard/
-        │   ├── SafetyOverview.tsx    # Consumer dashboard with safety pulse & metrics
-        │   └── RecentAlertsBanner.tsx# Plain-language alert warnings
-        ├── transactions/
-        │   ├── TransactionIngestion.tsx   # CSV file upload & manual input form
-        │   ├── TransactionHistory.tsx     # Filterable list, search, and empty states
-        │   ├── TransactionCard.tsx        # High-contrast transaction card
-        │   └── RiskExplanationModal.tsx   # Deep-dive modal explaining DetectionResult & next steps
-        ├── callshield/
-        │   ├── CallShieldLookup.tsx       # Phone search interface with test presets
-        │   └── PhoneReportCard.tsx        # 4 distinct outcome states
-        ├── scamshield/
-        │   ├── ScamShieldHome.tsx         # Educational scenario hub & progress
-        │   ├── ScenarioInteractive.tsx    # Roleplay message simulator & decisions
-        │   └── ExplainBackCard.tsx        # Comprehension verification questions
-        └── safetyloop/
-            └── SafetyLoop.tsx             # Strict evidence matcher (phone/VPA/ID -> transaction)
+                                      ┌─────────────────────────────────────────────────────────┐
+                                      │                     TRACE Platform                      │
+                                      └────────────────────────────┬────────────────────────────┘
+                                                                   │
+                                  ┌────────────────────────────────┴────────────────────────────────┐
+                                  ▼                                                                 ▼
+               ┌──────────────────────────────────────┐                         ┌──────────────────────────────────────┐
+               │         Investigate Mode             │                         │          Protect Me Mode             │
+               │        (Fraud Analysts)              │                         │       (Everyday Consumers)           │
+               ├──────────────────────────────────────┤                         ├──────────────────────────────────────┤
+               │ • Alert Queue & Triage Table         │                         │ • Consumer Security Portal           │
+               │ • Risk Ripple Network Graph          │                         │ • CallShield Phone Lookup            │
+               │ • Hotspot Geographic Clustering      │                         │ • ScamShield Interactive Defense     │
+               │ • Evidence Timeline & Notes Audit    │                         │ • Safety Loop Evidence Matcher       │
+               │ • TRACE AI Intelligence Brief        │                         │ • Accessible TTS & High-Contrast     │
+               └──────────────────┬───────────────────┘                         └──────────────────┬───────────────────┘
+                                  │                                                                │
+                                  └────────────────────────────────┬───────────────────────────────┘
+                                                                   ▼
+                                  ┌─────────────────────────────────────────────────────────────────┐
+                                  │               Unified FastAPI Backend & Shared SQLite           │
+                                  │   Shared Contracts: Transaction, Alert, Evidence, Case Notes    │
+                                  └────────────────────────────────┬────────────────────────────────┘
+                                                                   │
+                                       ┌───────────────────────────┴───────────────────────────┐
+                                       ▼                                                       ▼
+                    ┌─────────────────────────────────────┐               ┌─────────────────────────────────────┐
+                    │     Member 2 Detection Engine       │               │       TRACE AI Gemini Explainer     │
+                    │ • Velocity Surges                   │               │ • Observations vs Inferences        │
+                    │ • Structuring / Smurfing            │               │ • Objective Evidence Grounding      │
+                    │ • Frequency Spikes                  │               │ • Missing Info & Limitations        │
+                    │ • Rapid Fan-Out & Pass-Through      │               │ • Deterministic Fallback Mode       │
+                    └─────────────────────────────────────┘               └─────────────────────────────────────┘
 ```
 
 ---
 
-## Key Consumer Safety Principles Adhered To
+## Technology Stack
 
-- **Zero Credential Requests:** Never requests a UPI PIN, OTP, password, or card security code. Explicitly warns users that UPI PINs are only for debiting money.
-- **No Fabricated Data:** Does not fabricate live telecom GPS tracking, fake caller identity, or imaginary account freezes.
-- **Accurate Reputational Caveats:** Clearly displays that "No reports found" does NOT mean a number is safe.
-- **Isolated Demonstration Data:** All mock records are labeled with `isSampleDemonstration: true` and clearly distinguishable from user-entered transactions.
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Leaflet, Lucide Icons
+- **Backend:** Python 3.11+ / 3.14, FastAPI, Pydantic v2, Uvicorn, Pandas, NumPy
+- **Persistence:** SQLite for case statuses, notes, and audit trails
+- **AI Engine:** Google Gemini API with deterministic factual fallback
+- **Testing:** Pytest (Backend, 34 tests) & Node.js Native Test Runner (Investigate, 22 tests)
+
+---
+
+## Team Modules & Ownership
+
+| Member | Focus | Key Deliverables |
+|---|---|---|
+| **Member 1** | Architecture & Lead Integration | Shared data contracts, FastAPI backend routers, application shell, TRACE AI integration with deterministic fallback, end-to-end integration |
+| **Member 2** | Fraud Detection Logic | `FraudEngine` rule algorithms, velocity surges, structuring detection, transaction ingestion pipeline, priority score calculation |
+| **Member 3** | Investigate Experience | Deep-dive workbench, `RiskRippleGraphModel` directed transaction graph, `GeoAggregator` geographic cluster map, case immutability store |
+| **Member 4** | Protect Me Experience | `ProtectMeContainer`, CallShield caller verification, ScamShield interactive evasion roleplay, Safety Loop evidence matcher, Accessibility toolbar |
+
+---
+
+## Quickstart & Local Setup
+
+### 1. Prerequisites
+- **Node.js:** v18+ (tested on v24 LTS)
+- **Python:** v3.11+ (tested on Python 3.14)
+- **Git**
+
+### 2. Backend Setup
+```bash
+# Navigate to backend directory
+cd backend
+
+# Create virtual environment (if not already created)
+python -m venv venv
+
+# Activate virtual environment
+# Windows PowerShell:
+.\venv\Scripts\Activate.ps1
+# macOS / Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the FastAPI server
+python -m uvicorn app.main:app --reload --port 8000
+```
+- API root: `http://localhost:8000`
+- Interactive OpenAPI documentation: `http://localhost:8000/docs`
+
+### 3. Frontend Setup
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start Vite development server
+npm run dev
+```
+- Web Application: `http://localhost:5173` (requests to `/api` are automatically proxied to `http://localhost:8000`)
+
+---
+
+## Environment Variables & AI Configuration
+
+The application is fully functional **with or without** an external AI API key.
+
+| Variable | Description | Default / Fallback |
+|---|---|---|
+| `GEMINI_API_KEY` | Google Gemini API key for dynamic AI explanations | If missing or invalid, TRACE automatically engages the **TRACE Deterministic Grounded Engine** to provide evidence-grounded observations and limitations without errors. |
+
+To use Google Gemini:
+```powershell
+# Windows PowerShell
+$env:GEMINI_API_KEY = "your-api-key-here"
+
+# Linux / macOS
+export GEMINI_API_KEY="your-api-key-here"
+```
+
+> [!NOTE]
+> All secrets and API keys are strictly kept out of frontend bundles and Git commits.
+
+---
+
+## Verification & Automated Test Suites
+
+### Backend Test Suite (34/34 Passing)
+```bash
+cd backend
+python -m pytest tests/ -v
+```
+Verifies:
+- Health check and synthetic transaction loading
+- Detection engine rule triggers (velocity, structuring, spikes, pass-through)
+- Shared case endpoints and SQLite persistence
+- TRACE AI explanation generation (both Investigate and Protect Me modes)
+- CSV upload, parsing, and column alias mapping
+- Member 3 and Member 4 API compatibility bridges
+
+### Investigate Module Test Suite (22/22 Passing)
+```bash
+node --test --experimental-strip-types frontend/src/modules/investigate/tests/run-all-tests.ts
+```
+Verifies:
+- Alert queue triage and sorting
+- Risk Ripple directed graph generation and cycle detection
+- Geographic hotspot aggregation and empty location handling
+- Case status transitions and transaction immutability guarantees
+- Edge-case and malformed data handling
+
+### Frontend Production Build
+```bash
+cd frontend
+npm run build
+```
+Verifies TypeScript compilation and bundle generation (`dist/index.html`).
+
+---
+
+## Key Principles & Guardrails
+
+1. **Risk Scores Represent Investigation Priority:** Scores (`0` to `100`) reflect triage urgency, **not** calibrated legal probabilities of fraud.
+2. **Shared Case Context:** A case opened in Protect Me mode references the exact same transactions, evidence, and SQLite notes as in Investigate mode.
+3. **Evidence Grounding:** TRACE AI strictly separates observations (facts) from inferences (hypotheses) and explicitly states dataset limitations.
+4. **Zero Fabrication:** The hotspot map never invents locations; the connectivity graph never invents accounts or transactions.
+5. **Guidance and Demo Actions:** Consumer protective actions (e.g. "Lock Account") are clearly presented with transparent feedback explaining simulated and production behaviors.

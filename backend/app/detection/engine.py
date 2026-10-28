@@ -31,7 +31,6 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 def parse_iso(ts_str: str) -> datetime:
     """Parse ISO 8601 string to aware datetime."""
-    # Handle 'Z' or offset
     clean = ts_str.replace("Z", "+00:00")
     try:
         return datetime.fromisoformat(clean)
@@ -55,6 +54,7 @@ class DetectionEngine:
             self._rule_rapid_mule_dispersal,
             self._rule_high_velocity_burst,
             self._rule_high_risk_channel_anomaly,
+            self._rule_member2_fraud_engine,
         ]
 
     def register_rule(self, rule_fn):
@@ -139,20 +139,94 @@ class DetectionEngine:
             metadata={
                 "rules_evaluated": len(self.rules_registry),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "engine_version": "TRACE-DETECTION-v1.2",
+                "engine_version": "TRACE-DETECTION-v2.0-INTEGRATED",
             },
         )
 
     # -------------------------------------------------------------
-    # BASELINE RULE IMPLEMENTATIONS (Member 2 hook points)
+    # MEMBER 2 ENGINE INTEGRATION ADAPTER
+    # -------------------------------------------------------------
+
+    def _rule_member2_fraud_engine(self, txs: List[Transaction]) -> List[Alert]:
+        """
+        Invokes Member 2's FraudEngine directly over transactions, converting
+        Member 2's Alert models into unified TRACE shared Alert contracts.
+        """
+        try:
+            from trace_engine import detect_fraud
+            from trace_engine.schemas import Transaction as TETxn, TransactionStatus as TETxnStatus
+
+            te_txs = []
+            for t in txs:
+                ts = parse_iso(t.timestamp)
+                status_enum = TETxnStatus.COMPLETED
+                st_upper = (t.status or "COMPLETED").upper()
+                if st_upper == "PENDING":
+                    status_enum = TETxnStatus.PENDING
+                elif st_upper == "FAILED":
+                    status_enum = TETxnStatus.FAILED
+                elif st_upper == "CANCELLED":
+                    status_enum = TETxnStatus.CANCELLED
+
+                te_txs.append(
+                    TETxn(
+                        transaction_id=t.id,
+                        sender_id=t.sender_id,
+                        recipient_id=t.receiver_id,
+                        amount=t.amount,
+                        currency=t.currency or "USD",
+                        timestamp=ts,
+                        status=status_enum,
+                        metadata={"channel": t.channel},
+                    )
+                )
+
+            te_result = detect_fraud(te_txs)
+            converted_alerts = []
+            now_str = datetime.now(timezone.utc).isoformat()
+
+            for te_alert in te_result.alerts:
+                ev_items = []
+                for ev in te_alert.evidence:
+                    ev_items.append(
+                        EvidenceItem(
+                            id=f"EVD-M2-{ev.rule_id}-{te_alert.account_id}",
+                            type=ev.rule_name.upper().replace(" ", "_"),
+                            description=f"{ev.observed_fact}. Hypothesized Risk: {ev.inferred_risk}",
+                            severity=te_alert.priority.value,
+                            timestamp=now_str,
+                            details=ev.metrics,
+                        )
+                    )
+
+                converted_alerts.append(
+                    Alert(
+                        id=f"ALT-M2-{te_alert.alert_id}",
+                        case_id=f"CASE-M2-{te_alert.account_id}",
+                        customer_id=te_alert.account_id,
+                        title=f"{te_alert.explanation[:70]}",
+                        summary=te_alert.explanation,
+                        risk_score=te_alert.risk_score,
+                        priority=te_alert.priority.value,
+                        related_transaction_ids=te_alert.related_transaction_ids,
+                        triggered_rules=te_alert.triggered_rules,
+                        evidence=ev_items,
+                        limitations=te_alert.limitations,
+                        investigation_status=InvestigationStatus.NEW.value,
+                        created_at=now_str,
+                        updated_at=now_str,
+                    )
+                )
+
+            return converted_alerts
+        except Exception:
+            return []
+
+    # -------------------------------------------------------------
+    # BASELINE RULE IMPLEMENTATIONS
     # -------------------------------------------------------------
 
     def _rule_structuring_smurfing(self, txs: List[Transaction]) -> List[Alert]:
-        """
-        Detects suspected structuring/smurfing: multiple transactions
-        just below the $10,000 regulatory reporting threshold (e.g. $8,500 - $9,950)
-        from or to the same account within a 48-hour window.
-        """
         alerts = []
         by_sender: Dict[str, List[Transaction]] = {}
         for tx in txs:
@@ -212,12 +286,6 @@ class DetectionEngine:
         return alerts
 
     def _rule_geo_velocity(self, txs: List[Transaction]) -> List[Alert]:
-        """
-        Detects impossible travel / geo-velocity anomalies: successive transactions
-        from the same customer account occurring at physical locations that require
-        travel speeds > 800 km/h (impossible commercial transit).
-        Does NOT invent locations; strictly uses transaction coordinates.
-        """
         alerts = []
         by_sender: Dict[str, List[Transaction]] = {}
         for tx in txs:
@@ -246,7 +314,6 @@ class DetectionEngine:
 
                 speed_kmh = dist_km / delta_hours
 
-                # If distance > 300 km and speed > 800 km/h
                 if dist_km > 300.0 and speed_kmh > 800.0:
                     now_str = datetime.now(timezone.utc).isoformat()
                     case_id = f"CASE-GEO-{sender_id}"
@@ -300,11 +367,6 @@ class DetectionEngine:
         return alerts
 
     def _rule_rapid_mule_dispersal(self, txs: List[Transaction]) -> List[Alert]:
-        """
-        Detects rapid mule dispersal / pass-through funneling:
-        An account receives a large inbound transaction and immediately (within 6 hours)
-        disperses >= 80% of funds across 2 or more distinct outbound accounts.
-        """
         alerts = []
         accounts = set([tx.sender_id for tx in txs] + [tx.receiver_id for tx in txs])
 
@@ -317,7 +379,6 @@ class DetectionEngine:
 
             for in_tx in inbound:
                 t_in = parse_iso(in_tx.timestamp)
-                # find outbound within 6 hours
                 quick_out = [
                     out_tx for out_tx in outbound
                     if 0 <= (parse_iso(out_tx.timestamp) - t_in).total_seconds() <= 21600
@@ -377,10 +438,6 @@ class DetectionEngine:
         return alerts
 
     def _rule_high_velocity_burst(self, txs: List[Transaction]) -> List[Alert]:
-        """
-        Detects sudden velocity burst: >= 4 transactions initiated by the same account
-        within a 10-minute window.
-        """
         alerts = []
         by_sender: Dict[str, List[Transaction]] = {}
         for tx in txs:
@@ -446,10 +503,6 @@ class DetectionEngine:
         return alerts
 
     def _rule_high_risk_channel_anomaly(self, txs: List[Transaction]) -> List[Alert]:
-        """
-        Detects sudden high-value transfer to high-risk channels (e.g. CRYPTO_RAMP, WIRE)
-        exceeding $15,000.
-        """
         alerts = []
         for tx in txs:
             if tx.channel in ["CRYPTO_RAMP", "WIRE"] and tx.amount >= 15000.0:
