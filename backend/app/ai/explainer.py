@@ -136,6 +136,13 @@ def generate_trace_ai_explanation(
     or if API call fails.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+            api_key = os.environ.get("GEMINI_API_KEY")
+        except Exception:
+            pass
 
     if not api_key:
         logger.info("GEMINI_API_KEY not found in environment; using deterministic fallback.")

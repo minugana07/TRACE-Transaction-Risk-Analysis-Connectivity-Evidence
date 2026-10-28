@@ -1,5 +1,20 @@
 import logging
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file automatically from backend/ or root repository directory
+_backend_dir = Path(__file__).resolve().parent.parent
+_root_dir = _backend_dir.parent
+
+for _env_candidate in [_backend_dir / ".env", _root_dir / ".env", Path.cwd() / ".env"]:
+    if _env_candidate.is_file():
+        load_dotenv(dotenv_path=_env_candidate, override=False)
+        break
+else:
+    load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import api_router
