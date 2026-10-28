@@ -304,3 +304,19 @@ class AIExplanationResponse(BaseModel):
         "TRACE AI provides evidence summarization and decision-support. It does not declare guilt or replace human judgment.",
         description="Compliance and safety disclaimer"
     )
+
+
+class AIChatRequest(BaseModel):
+    message: str
+    case_id: Optional[str] = None
+    mode: str = Field("investigate", description="'investigate' or 'protect_me'")
+    history: Optional[List[Dict[str, str]]] = Field(default_factory=list)
+
+
+class AIChatResponse(BaseModel):
+    reply: str
+    engine_used: str
+    case_id: Optional[str] = None
+    disclaimer: str
+    suggestions: Optional[List[str]] = Field(default_factory=list)
+

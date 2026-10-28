@@ -32,7 +32,7 @@ export const InvestigateModuleView: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full rounded-xl overflow-hidden border border-slate-800 shadow-xl bg-slate-950">
+    <div className="w-full rounded overflow-hidden border border-[#1E314B] shadow bg-[#060D1A]">
       <div ref={containerRef} className="w-full min-h-[750px]" />
     </div>
   );

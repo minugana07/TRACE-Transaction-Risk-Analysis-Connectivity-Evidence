@@ -51,6 +51,58 @@ def init_db():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('analyst', 'consumer')),
+        full_name TEXT NOT NULL,
+        account_id TEXT,
+        created_at TEXT NOT NULL
+    )
+    """)
+
+    # Seed default demonstration users if not present
+    import hashlib
+    def _hash_pw(pw: str) -> str:
+        return hashlib.sha256((pw + "trace_salt_v2").encode()).hexdigest()
+
+    cursor.execute("SELECT COUNT(*) as count FROM users")
+    if cursor.fetchone()["count"] == 0:
+        now_str = datetime.now(timezone.utc).isoformat()
+        cursor.execute(
+            """
+            INSERT INTO users (username, email, password_hash, role, full_name, account_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "analyst",
+                "lead.analyst@trace-intelligence.internal",
+                _hash_pw("password123"),
+                "analyst",
+                "Lead Financial Crime Analyst",
+                None,
+                now_str,
+            ),
+        )
+        cursor.execute(
+            """
+            INSERT INTO users (username, email, password_hash, role, full_name, account_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "consumer",
+                "verified.consumer@trace.safety",
+                _hash_pw("password123"),
+                "consumer",
+                "Jane Batch (Verified Consumer)",
+                "ACC-101",
+                now_str,
+            ),
+        )
+
     conn.commit()
     conn.close()
 
@@ -224,3 +276,67 @@ def get_case_history(case_id: str) -> List[dict]:
     conn.close()
 
     return [dict(row) for row in rows]
+
+
+def hash_password(password: str) -> str:
+    import hashlib
+    return hashlib.sha256((password + "trace_salt_v2").encode()).hexdigest()
+
+
+def create_user(username: str, email: str, password: str, role: str, full_name: str, account_id: Optional[str] = None) -> dict:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    pw_hash = hash_password(password)
+
+    try:
+        cursor.execute(
+            """
+            INSERT INTO users (username, email, password_hash, role, full_name, account_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (username.lower().strip(), email.lower().strip(), pw_hash, role, full_name.strip(), account_id or "ACC-101", now_iso),
+        )
+        user_id = cursor.lastrowid
+        conn.commit()
+    finally:
+        conn.close()
+
+    return {
+        "id": user_id,
+        "username": username.lower().strip(),
+        "email": email.lower().strip(),
+        "role": role,
+        "full_name": full_name.strip(),
+        "account_id": account_id or "ACC-101",
+    }
+
+
+def authenticate_user(identifier: str, password: str) -> Optional[dict]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    pw_hash = hash_password(password)
+    ident = identifier.lower().strip()
+
+    cursor.execute(
+        """
+        SELECT id, username, email, password_hash, role, full_name, account_id
+        FROM users
+        WHERE (username = ? OR email = ?) AND password_hash = ?
+        """,
+        (ident, ident, pw_hash),
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if row:
+        return {
+            "id": row["id"],
+            "username": row["username"],
+            "email": row["email"],
+            "role": row["role"],
+            "full_name": row["full_name"],
+            "account_id": row["account_id"],
+        }
+    return None
+

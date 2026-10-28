@@ -1,6 +1,8 @@
 import type {
   AIExplanationRequest,
   AIExplanationResponse,
+  AIChatRequest,
+  AIChatResponse,
   Alert,
   CaseStatusUpdate,
   DetectionResult,
@@ -100,4 +102,61 @@ export async function triggerDetectionRun(): Promise<DetectionResult> {
   });
   if (!res.ok) throw new Error('Failed to execute detection run');
   return res.json();
+}
+
+export async function sendAIChatMessage(payload: AIChatRequest): Promise<AIChatResponse> {
+  const res = await fetch(`${API_BASE}/ai/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to communicate with TRACE AI');
+  }
+  return res.json();
+}
+
+export interface AuthUserData {
+  id: number;
+  username: string;
+  email: string;
+  role: 'analyst' | 'consumer';
+  full_name: string;
+  account_id?: string;
+}
+
+export async function loginUser(identifier: string, password: string): Promise<AuthUserData> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier, password }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Authentication failed');
+  }
+  const data = await res.json();
+  return data.user;
+}
+
+export async function registerUser(userData: {
+  username: string;
+  email: string;
+  password: string;
+  role: 'analyst' | 'consumer';
+  full_name: string;
+  account_id?: string;
+}): Promise<AuthUserData> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Registration failed');
+  }
+  const data = await res.json();
+  return data.user;
 }

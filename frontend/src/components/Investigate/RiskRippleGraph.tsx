@@ -32,30 +32,30 @@ export const RiskRippleGraph: React.FC<RiskRippleGraphProps> = ({
   const nodes = Object.keys(accountMap);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+    <div className="bg-[#0C182B] border border-[#1E314B] rounded-lg p-5 shadow">
+      <div className="flex items-center justify-between pb-4 border-b border-[#1E314B] mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
+          <div className="p-2 bg-[#06B6D4]/15 text-[#06B6D4] border border-[#06B6D4]/30 rounded">
             <Share2 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-slate-100">
+            <h3 className="text-sm font-semibold text-[#F8FAFC] uppercase tracking-wider">
               Risk Ripple Connectivity Graph
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#94A3B8]">
               Direct and multi-hop fund flows mapped from real transaction records ({transactions.length} transfers)
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> Subject
+        <div className="flex items-center gap-3 text-xs text-[#94A3B8] font-mono">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#06B6D4] inline-block" /> Subject
           </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" /> Intermediary / Mule
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] inline-block" /> Intermediary / Mule
           </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Counterparty
+          <span className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] inline-block" /> Counterparty
           </span>
         </div>
       </div>
@@ -68,45 +68,45 @@ export const RiskRippleGraph: React.FC<RiskRippleGraphProps> = ({
           const isIntermediary = stats.inbound > 0 && stats.outbound > 0;
           const isSelected = selectedNode === accId;
 
-          let badgeColor = 'border-slate-700 bg-slate-800/60 text-slate-200';
+          let badgeColor = 'border-[#1E314B] bg-[#08101E] text-[#F8FAFC]';
           if (isSubject) {
-            badgeColor = 'border-blue-500/50 bg-blue-950/40 text-blue-300 ring-1 ring-blue-500/30';
+            badgeColor = 'border-[#06B6D4] bg-[#06B6D4]/15 text-[#06B6D4] ring-1 ring-[#06B6D4]/40';
           } else if (isIntermediary) {
-            badgeColor = 'border-amber-500/50 bg-amber-950/40 text-amber-300 ring-1 ring-amber-500/30';
+            badgeColor = 'border-[#F59E0B] bg-[#F59E0B]/15 text-[#F59E0B] ring-1 ring-[#F59E0B]/40';
           }
 
           return (
             <div
               key={accId}
               onClick={() => setSelectedNode(isSelected ? null : accId)}
-              className={`p-3 rounded-lg border cursor-pointer transition-all ${badgeColor} ${
-                isSelected ? 'ring-2 ring-indigo-400 scale-[1.02]' : 'hover:border-slate-600'
+              className={`p-3 rounded border cursor-pointer transition-all ${badgeColor} ${
+                isSelected ? 'ring-2 ring-[#06B6D4] scale-[1.01]' : 'hover:border-[#06B6D4]/50'
               }`}
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="font-mono text-xs font-bold truncate">{accId}</span>
                 {isSubject ? (
-                  <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-medium">
+                  <span className="text-[10px] bg-[#06B6D4]/20 text-[#06B6D4] px-1.5 py-0.5 rounded font-mono font-bold">
                     Subject
                   </span>
                 ) : isIntermediary ? (
-                  <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-medium">
+                  <span className="text-[10px] bg-[#F59E0B]/20 text-[#F59E0B] px-1.5 py-0.5 rounded font-mono font-bold">
                     Mule/Hub
                   </span>
                 ) : (
-                  <span className="text-[10px] bg-slate-700 text-slate-300 px-1.5 py-0.5 rounded font-medium">
+                  <span className="text-[10px] bg-[#0C182B] text-[#94A3B8] border border-[#1E314B] px-1.5 py-0.5 rounded font-mono">
                     End-Point
                   </span>
                 )}
               </div>
-              <div className="text-[11px] space-y-0.5 text-slate-400">
+              <div className="text-[11px] space-y-0.5 text-[#94A3B8]">
                 <div className="flex justify-between">
                   <span>Inflow:</span>
-                  <span className="text-emerald-400 font-mono">${stats.inbound.toLocaleString()}</span>
+                  <span className="text-[#10B981] font-mono font-semibold">${stats.inbound.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Outflow:</span>
-                  <span className="text-rose-400 font-mono">${stats.outbound.toLocaleString()}</span>
+                  <span className="text-[#EF4444] font-mono font-semibold">${stats.outbound.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -116,7 +116,7 @@ export const RiskRippleGraph: React.FC<RiskRippleGraphProps> = ({
 
       {/* Connectivity Flow Diagram */}
       <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+        <div className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-2 font-mono">
           Hop-by-Hop Transaction Edges
         </div>
         {transactions.map((tx, idx) => {
@@ -126,31 +126,31 @@ export const RiskRippleGraph: React.FC<RiskRippleGraphProps> = ({
           return (
             <div
               key={tx.id}
-              className={`flex items-center justify-between p-2.5 rounded-lg border text-xs transition-opacity ${
+              className={`flex items-center justify-between p-2.5 rounded border text-xs transition-opacity ${
                 isHighlighted
-                  ? 'bg-slate-800/80 border-slate-700 text-slate-200'
-                  : 'bg-slate-900/40 border-slate-800/50 text-slate-500 opacity-40'
+                  ? 'bg-[#08101E] border-[#1E314B] text-[#F8FAFC]'
+                  : 'bg-[#08101E]/40 border-[#1E314B]/40 text-[#94A3B8] opacity-35'
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="text-slate-500 font-mono text-[10px] w-6">#{idx + 1}</span>
-                <span className="font-mono font-semibold text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded">
+                <span className="text-[#94A3B8] font-mono text-[10px] w-6">#{idx + 1}</span>
+                <span className="font-mono font-semibold text-[#06B6D4] bg-[#06B6D4]/15 px-2 py-0.5 rounded border border-[#06B6D4]/30">
                   {tx.sender_id}
                 </span>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
-                <span className="font-mono font-semibold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded">
+                <ArrowRight className="w-3.5 h-3.5 text-[#94A3B8]" />
+                <span className="font-mono font-semibold text-[#F59E0B] bg-[#F59E0B]/15 px-2 py-0.5 rounded border border-[#F59E0B]/30">
                   {tx.receiver_id}
                 </span>
               </div>
 
               <div className="flex items-center gap-4">
-                <span className="px-2 py-0.5 rounded text-[10px] bg-slate-700 text-slate-300 font-medium">
+                <span className="px-2 py-0.5 rounded text-[10px] bg-[#0C182B] text-[#94A3B8] border border-[#1E314B] font-mono">
                   {tx.channel}
                 </span>
-                <span className="font-mono font-bold text-slate-100 text-sm">
+                <span className="font-mono font-bold text-[#F8FAFC] text-sm tabular-nums">
                   ${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-[#94A3B8] font-mono">
                   {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>

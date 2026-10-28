@@ -138,3 +138,29 @@ export interface AIExplanationResponse {
   engine_used: string;
   disclaimer: string;
 }
+
+export interface AIChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  engine_used?: string;
+  case_id?: string;
+  suggestions?: string[];
+}
+
+export interface AIChatRequest {
+  message: string;
+  case_id?: string;
+  mode?: 'investigate' | 'protect_me';
+  history?: Array<{ role: string; content: string }>;
+}
+
+export interface AIChatResponse {
+  reply: string;
+  engine_used: string;
+  case_id?: string;
+  disclaimer: string;
+  suggestions?: string[];
+}
+

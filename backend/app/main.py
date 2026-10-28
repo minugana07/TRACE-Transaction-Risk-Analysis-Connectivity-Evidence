@@ -8,12 +8,10 @@ from dotenv import load_dotenv
 _backend_dir = Path(__file__).resolve().parent.parent
 _root_dir = _backend_dir.parent
 
-for _env_candidate in [_backend_dir / ".env", _root_dir / ".env", Path.cwd() / ".env"]:
+for _env_candidate in [_root_dir / ".env", _backend_dir / ".env", Path.cwd() / ".env"]:
     if _env_candidate.is_file():
-        load_dotenv(dotenv_path=_env_candidate, override=False)
-        break
-else:
-    load_dotenv()
+        load_dotenv(dotenv_path=_env_candidate, override=True)
+
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

@@ -8,18 +8,39 @@ import {
   updateCaseStatus,
   addCaseNote,
 } from './services/api';
-import { Header } from './components/Header';
+import { Header, TraceWorkspace } from './components/Header';
+import { LandingLoginPage } from './components/Auth/LandingLoginPage';
+import { InvestigateSidebar, InvestigateSubPage } from './components/Investigate/InvestigateSidebar';
+import { ProtectMeSidebar, ProtectMeSubPage } from './components/ProtectMe/ProtectMeSidebar';
+import { AnalyticsOverview } from './components/Analytics/AnalyticsOverview';
 import { AnalystWorkbench } from './components/Investigate/AnalystWorkbench';
-import { InvestigateModuleView } from './components/Investigate/InvestigateModuleView';
+import { RiskRippleWorkspace } from './components/Investigate/RiskRippleWorkspace';
+import { InvestigationMapPage } from './components/Investigate/InvestigationMapPage';
+import { LedgerExplorer } from './components/Investigate/LedgerExplorer';
+import { CSVBatchScoringPage } from './components/Investigate/CSVBatchScoringPage';
+import { InvestigationQueuePage } from './components/Investigate/InvestigationQueuePage';
+import { SecurityAlertsPage } from './components/Investigate/SecurityAlertsPage';
+import { ThresholdsHealthPage } from './components/Investigate/ThresholdsHealthPage';
+import { TraceAIChatPage } from './components/AI/TraceAIChatPage';
 import { ConsumerSafetyView } from './components/ProtectMe/ConsumerSafetyView';
+import { CallShieldPage } from './components/ProtectMe/CallShieldPage';
+import { VerificationCenterPage } from './components/ProtectMe/VerificationCenterPage';
+import { ScamShieldPage } from './components/ProtectMe/ScamShieldPage';
 import { ProtectMeContainer } from './features/protect-me/components/ProtectMeContainer';
 import { UploadModal } from './components/Common/UploadModal';
-import { Loader2, AlertCircle, RefreshCw, Network, ShieldCheck, Activity, PhoneCall } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import type { AuthUserData } from './services/api';
 
 export function App() {
-  const [currentMode, setCurrentMode] = useState<'investigate' | 'protect_me'>('investigate');
-  const [investigateSubTab, setInvestigateSubTab] = useState<'workbench' | 'deep_dive'>('workbench');
-  const [protectMeSubTab, setProtectMeSubTab] = useState<'portal' | 'suite'>('portal');
+  // Operational Role Selection (null shows role selector Landing page)
+  const [currentRole, setCurrentRole] = useState<'analyst' | 'consumer' | null>(null);
+  const [currentUser, setCurrentUser] = useState<AuthUserData | null>(null);
+
+  // Two distinct products inside TRACE
+  const [currentWorkspace, setCurrentWorkspace] = useState<TraceWorkspace>('investigate');
+  const [investigateSubPage, setInvestigateSubPage] = useState<InvestigateSubPage>('overview');
+  const [protectMeSubPage, setProtectMeSubPage] = useState<ProtectMeSubPage>('safety_overview');
+
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -29,6 +50,23 @@ export function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+
+  // Dark / Light Mode State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem('trace_theme') !== 'light';
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('trace_theme', 'dark');
+    } else {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('trace_theme', 'light');
+    }
+  }, [isDarkMode]);
 
   // Initial load
   const loadInitialData = async () => {
@@ -82,19 +120,18 @@ export function App() {
     setCaseNotes((prev) => [...prev, newNote]);
   };
 
-  const handleStatusChanged = async (newStatus: string) => {
-    if (!activeCaseId) return;
+  const handleStatusChanged = async (caseId: string, newStatus: string) => {
     try {
-      await updateCaseStatus(activeCaseId, {
-        case_id: activeCaseId,
+      await updateCaseStatus(caseId, {
+        case_id: caseId,
         status: newStatus,
-        author: currentMode === 'protect_me' ? 'Verified Consumer' : 'Lead Analyst',
-        reason: `Updated via ${currentMode === 'protect_me' ? 'Protect Me portal' : 'Investigate workbench'}`,
+        author: currentWorkspace === 'protect_me' ? 'Verified Consumer' : 'Lead Analyst',
+        reason: `Updated via ${currentWorkspace === 'protect_me' ? 'Protect Me portal' : 'Investigate workbench'}`,
       });
 
       // Update in-memory alert status
       setAlerts((prev) =>
-        prev.map((a) => (a.case_id === activeCaseId ? { ...a, investigation_status: newStatus } : a))
+        prev.map((a) => (a.case_id === caseId ? { ...a, investigation_status: newStatus } : a))
       );
     } catch (err) {
       console.error('Failed to change status:', err);
@@ -115,7 +152,7 @@ export function App() {
         note: 'Customer confirmed via Protect Me portal: "Yes, I authorized these transfers."',
         status_change: 'RESOLVED_BENIGN',
       });
-      handleStatusChanged('RESOLVED_BENIGN');
+      handleStatusChanged(caseId, 'RESOLVED_BENIGN');
     } else if (actionType === 'LOCK_ACCOUNT') {
       await addCaseNote(caseId, {
         case_id: caseId,
@@ -123,7 +160,7 @@ export function App() {
         note: 'SECURITY LOCK ACTIVATED by customer: "I did not make these transfers. Account frozen."',
         status_change: 'ESCALATED',
       });
-      handleStatusChanged('ESCALATED');
+      handleStatusChanged(caseId, 'ESCALATED');
     } else if (actionType === 'CALLBACK') {
       await addCaseNote(caseId, {
         case_id: caseId,
@@ -146,133 +183,287 @@ export function App() {
     }
   };
 
+  const handleSelectRoleFromLanding = (
+    role: 'analyst' | 'consumer',
+    selectedAccount?: string,
+    user?: AuthUserData
+  ) => {
+    setCurrentRole(role);
+    if (user) setCurrentUser(user);
+    if (role === 'analyst') {
+      setCurrentWorkspace('investigate');
+      setInvestigateSubPage('overview');
+    } else {
+      setCurrentWorkspace('protect_me');
+      setProtectMeSubPage('safety_overview');
+    }
+  };
+
+  const criticalCount = alerts.filter((a) => a.priority === 'CRITICAL').length;
+  const unresolvedAlerts = alerts.filter(
+    (a) => a.investigation_status !== 'RESOLVED_BENIGN' && a.investigation_status !== 'CLOSED'
+  ).length;
+
+  const sampleAccounts = Array.from(new Set(transactions.map((t) => t.account_id))).slice(0, 5);
+
+  // If user hasn't selected a role, render role selection landing page
+  if (currentRole === null) {
+    return (
+      <LandingLoginPage
+        onSelectRole={handleSelectRoleFromLanding}
+        isBackendHealthy={isBackendHealthy}
+        sampleAccounts={sampleAccounts}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Persistent Application Header */}
+    <div
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 ${
+        isDarkMode ? 'bg-[#080D1B] text-[#F8FAFC]' : 'bg-[#F1F5F9] text-[#0F172A]'
+      }`}
+    >
+      {/* Persistent Application Command Header */}
       <Header
-        currentMode={currentMode}
-        onModeChange={setCurrentMode}
+        currentWorkspace={currentWorkspace}
+        onWorkspaceChange={(ws) => {
+          setCurrentWorkspace(ws);
+          setCurrentRole(ws === 'investigate' ? 'analyst' : 'consumer');
+        }}
         onOpenUpload={() => setIsUploadModalOpen(true)}
         isBackendHealthy={isBackendHealthy}
         activeCaseId={activeCaseId}
+        isDarkMode={isDarkMode}
+        onToggleTheme={() => setIsDarkMode((prev) => !prev)}
+        onSignOut={() => setCurrentRole(null)}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {isLoading ? (
-          <div className="h-96 flex flex-col items-center justify-center text-center">
-            <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-4" />
-            <h3 className="text-base font-semibold text-slate-200">Connecting to TRACE Engine</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Loading shared contracts, active alerts, and transaction records...
-            </p>
-          </div>
-        ) : error ? (
-          <div className="bg-rose-950/30 border border-rose-800/80 rounded-2xl p-8 text-center max-w-lg mx-auto my-12 space-y-3">
-            <AlertCircle className="w-10 h-10 text-rose-400 mx-auto" />
-            <h2 className="text-base font-bold text-rose-200">Unable to Connect to Backend</h2>
-            <p className="text-xs text-slate-400">{error}</p>
-            <p className="text-xs text-slate-500 font-mono">
-              Ensure FastAPI backend is running on http://127.0.0.1:8001
-            </p>
-            <button
-              onClick={loadInitialData}
-              className="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg inline-flex items-center gap-1.5 transition"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Reconnect
-            </button>
-          </div>
-        ) : currentMode === 'investigate' ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setInvestigateSubTab('workbench')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                    investigateSubTab === 'workbench'
-                      ? 'bg-indigo-600 text-white shadow'
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Activity className="w-3.5 h-3.5" /> Analyst Workbench
-                </button>
-                <button
-                  onClick={() => setInvestigateSubTab('deep_dive')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                    investigateSubTab === 'deep_dive'
-                      ? 'bg-indigo-600 text-white shadow'
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Network className="w-3.5 h-3.5" /> Connectivity & Geo Matrix
-                </button>
-              </div>
-              <span className="text-[11px] text-slate-500 hidden sm:inline">
-                TRACE Core Engine &bull; Shared Investigation Context
-              </span>
-            </div>
-
-            {investigateSubTab === 'workbench' ? (
-              <AnalystWorkbench
-                alerts={alerts}
-                transactions={transactions}
-                activeCaseId={activeCaseId}
-                onSelectCase={handleSelectCase}
-                caseTransactions={caseTransactions}
-                caseNotes={caseNotes}
-                onNoteAdded={handleNoteAdded}
-                onStatusChanged={handleStatusChanged}
-              />
-            ) : (
-              <InvestigateModuleView />
-            )}
-          </div>
+      {/* Main Workspace Body: Dual-Navigation + Dedicated Subpages */}
+      <div className="flex-1 flex flex-col lg:flex-row w-full min-h-[calc(100vh-64px)]">
+        {/* Dedicated Sidebar for Current Product Experience */}
+        {currentWorkspace === 'investigate' ? (
+          <InvestigateSidebar
+            activeSubPage={investigateSubPage}
+            onSelectSubPage={setInvestigateSubPage}
+            alertCount={alerts.length}
+            criticalCount={criticalCount}
+          />
         ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setProtectMeSubTab('portal')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                    protectMeSubTab === 'portal'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" /> Case Guidance & Actions
-                </button>
-                <button
-                  onClick={() => setProtectMeSubTab('suite')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                    protectMeSubTab === 'suite'
-                      ? 'bg-emerald-600 text-white shadow'
-                      : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <PhoneCall className="w-3.5 h-3.5" /> CallShield & ScamShield Suite
-                </button>
-              </div>
-              <span className="text-[11px] text-slate-500 hidden sm:inline">
-                Citizen Safety &bull; Voice Reader &bull; Interactive Defense
-              </span>
-            </div>
-
-            {protectMeSubTab === 'portal' ? (
-              <ConsumerSafetyView
-                alerts={alerts}
-                activeCaseId={activeCaseId}
-                onSelectCase={handleSelectCase}
-                caseTransactions={caseTransactions}
-                onTakeAction={handleConsumerAction}
-              />
-            ) : (
-              <div className="rounded-xl overflow-hidden border border-slate-800 shadow-xl">
-                <ProtectMeContainer enableLiveBackend={true} apiBaseUrl="" />
-              </div>
-            )}
-          </div>
+          <ProtectMeSidebar
+            activeSubPage={protectMeSubPage}
+            onSelectSubPage={setProtectMeSubPage}
+            unresolvedCount={unresolvedAlerts}
+          />
         )}
-      </main>
+
+        {/* Dedicated Main Content Canvas */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 cyber-grid overflow-y-auto">
+          {isLoading ? (
+            <div className="h-96 flex flex-col items-center justify-center text-center">
+              <Loader2 className="w-10 h-10 text-[#2563EB] animate-spin mb-4" />
+              <h3 className="text-base font-semibold text-[#F8FAFC]">
+                Initializing TRACE Intelligence Workspace
+              </h3>
+              <p className="text-xs text-[#94A3B8] mt-1 font-mono">
+                Connecting shared contracts, alert graphs, and transaction rails...
+              </p>
+            </div>
+          ) : error ? (
+            <div className="bg-[#111A2E] border border-[#F43F5E]/60 rounded-2xl p-8 text-center max-w-lg mx-auto my-12 space-y-3 shadow-xl">
+              <AlertCircle className="w-10 h-10 text-[#F43F5E] mx-auto" />
+              <h2 className="text-base font-bold text-[#F8FAFC]">Unable to Connect to Backend</h2>
+              <p className="text-xs text-[#94A3B8]">{error}</p>
+              <p className="text-xs text-[#94A3B8] font-mono">
+                Ensure FastAPI backend is running on http://127.0.0.1:8001
+              </p>
+              <button
+                onClick={loadInitialData}
+                className="mt-4 px-4 py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold uppercase rounded-xl inline-flex items-center gap-1.5 transition shadow"
+              >
+                <RefreshCw className="w-3.5 h-3.5" /> Reconnect API
+              </button>
+            </div>
+          ) : currentWorkspace === 'investigate' ? (
+            /* TRACE INVESTIGATE (Analyst & Investigator Workstation) */
+            <>
+              {investigateSubPage === 'overview' && (
+                <AnalyticsOverview
+                  alerts={alerts}
+                  transactions={transactions}
+                  onSelectCase={handleSelectCase}
+                  onNavigateToInvestigate={(caseId) => {
+                    setInvestigateSubPage('workbench');
+                    if (caseId) handleSelectCase(caseId);
+                  }}
+                  onNavigateToRiskRipple={() => setInvestigateSubPage('risk_ripple')}
+                />
+              )}
+
+              {investigateSubPage === 'ledger' && (
+                <LedgerExplorer transactions={transactions} alerts={alerts} />
+              )}
+
+              {investigateSubPage === 'batch_scoring' && (
+                <CSVBatchScoringPage onScoringComplete={handleUploadSuccess} />
+              )}
+
+              {investigateSubPage === 'queue' && (
+                <InvestigationQueuePage
+                  alerts={alerts}
+                  transactions={transactions}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                  onNavigateToWorkbench={(cid) => {
+                    handleSelectCase(cid);
+                    setInvestigateSubPage('workbench');
+                  }}
+                  onNavigateToRiskRipple={(cid) => {
+                    handleSelectCase(cid);
+                    setInvestigateSubPage('risk_ripple');
+                  }}
+                  onNavigateToAIChat={(cid) => {
+                    handleSelectCase(cid);
+                    setInvestigateSubPage('ai_chat');
+                  }}
+                  onStatusChanged={handleStatusChanged}
+                />
+              )}
+
+              {investigateSubPage === 'risk_ripple' && (
+                <RiskRippleWorkspace
+                  transactions={transactions}
+                  alerts={alerts}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                />
+              )}
+
+              {investigateSubPage === 'map' && (
+                <InvestigationMapPage
+                  transactions={transactions}
+                  alerts={alerts}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                />
+              )}
+
+              {investigateSubPage === 'alerts' && (
+                <SecurityAlertsPage
+                  alerts={alerts}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                  onNavigateToWorkbench={(cid) => {
+                    handleSelectCase(cid);
+                    setInvestigateSubPage('workbench');
+                  }}
+                  onNavigateToRiskRipple={(cid) => {
+                    handleSelectCase(cid);
+                    setInvestigateSubPage('risk_ripple');
+                  }}
+                  onNavigateToAIChat={(cid) => {
+                    handleSelectCase(cid);
+                    setInvestigateSubPage('ai_chat');
+                  }}
+                />
+              )}
+
+              {investigateSubPage === 'ai_chat' && (
+                <TraceAIChatPage
+                  alerts={alerts}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                  mode="investigate"
+                />
+              )}
+
+              {investigateSubPage === 'thresholds' && (
+                <ThresholdsHealthPage isBackendHealthy={isBackendHealthy} />
+              )}
+
+              {investigateSubPage === 'workbench' && (
+                <AnalystWorkbench
+                  alerts={alerts}
+                  transactions={transactions}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                  caseTransactions={caseTransactions}
+                  caseNotes={caseNotes}
+                  onNoteAdded={handleNoteAdded}
+                  onStatusChanged={(newSt) => {
+                    if (activeCaseId) handleStatusChanged(activeCaseId, newSt);
+                  }}
+                />
+              )}
+            </>
+          ) : (
+            /* TRACE PROTECT ME (Consumer Safety Platform) */
+            <>
+              {protectMeSubPage === 'safety_overview' && (
+                <ConsumerSafetyView
+                  alerts={alerts}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                  caseTransactions={caseTransactions}
+                  onTakeAction={handleConsumerAction}
+                  viewMode="overview"
+                />
+              )}
+
+              {protectMeSubPage === 'my_transactions' && (
+                <div className="rounded-2xl overflow-hidden border border-[#25324A] shadow-xl">
+                  <ProtectMeContainer
+                    enableLiveBackend={true}
+                    apiBaseUrl=""
+                    initialTab="transactions"
+                  />
+                </div>
+              )}
+
+              {protectMeSubPage === 'risk_analysis' && (
+                <ConsumerSafetyView
+                  alerts={alerts}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                  caseTransactions={caseTransactions}
+                  onTakeAction={handleConsumerAction}
+                  viewMode="risk_score"
+                />
+              )}
+
+              {protectMeSubPage === 'callshield' && (
+                <CallShieldPage />
+              )}
+
+              {protectMeSubPage === 'verification' && (
+                <VerificationCenterPage />
+              )}
+
+              {protectMeSubPage === 'scamshield' && (
+                <ScamShieldPage />
+              )}
+
+              {protectMeSubPage === 'safetyloop' && (
+                <div className="rounded-2xl overflow-hidden border border-[#25324A] shadow-xl">
+                  <ProtectMeContainer
+                    enableLiveBackend={true}
+                    apiBaseUrl=""
+                    initialTab="safetyloop"
+                  />
+                </div>
+              )}
+
+              {protectMeSubPage === 'consumer_chat' && (
+                <TraceAIChatPage
+                  alerts={alerts}
+                  activeCaseId={activeCaseId}
+                  onSelectCase={handleSelectCase}
+                  mode="protect_me"
+                />
+              )}
+            </>
+          )}
+        </main>
+      </div>
 
       {/* Dataset Upload Modal */}
       <UploadModal
@@ -281,15 +472,21 @@ export function App() {
         onUploadSuccess={handleUploadSuccess}
       />
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950/40 py-4 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>
-            <b>TRACE</b> &bull; Transaction Risk Analysis, Connectivity & Evidence
-          </span>
-          <span className="font-mono text-[11px] text-slate-600">
-            One Integrated Platform &bull; Investigate & Protect Me
-          </span>
+      {/* Desktop Command Footer */}
+      <footer className="border-t border-[#25324A] bg-[#080D1B] py-3 text-xs text-[#94A3B8]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-[#F8FAFC]">TRACE V2.0</span>
+            <span className="text-[#25324A]">|</span>
+            <span className="text-[11px] text-[#94A3B8]">
+              Transaction Risk Analysis, Connectivity & Evidence &bull; Command Workstation
+            </span>
+          </div>
+          <div className="font-mono text-[10px] text-[#94A3B8] flex items-center gap-3">
+            <span>SURVEILLANCE WORKSTATION V2.0</span>
+            <span className="text-[#25324A]">&bull;</span>
+            <span className="text-[#2563EB]">CYBER INTELLIGENCE ACTIVE</span>
+          </div>
         </div>
       </footer>
     </div>

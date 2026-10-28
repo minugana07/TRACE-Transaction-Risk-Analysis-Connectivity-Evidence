@@ -2,15 +2,49 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
+  --bg-main: #080D1B;
+  --bg-card: #111A2E;
+  --bg-card-hover: #16223B;
+  --border-color: #25324A;
+  --primary-blue: #2563EB;
+  --secondary-violet: #7C3AED;
+  --accent-primary: #2563EB;
+  --accent-secondary: #7C3AED;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --success: #10B981;
+  --danger: #F43F5E;
+  --warning: #F59E0B;
+}
+
+html.light {
+  --bg-main: #F1F5F9;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F8FAFC;
+  --border-color: #E2E8F0;
+  --primary-blue: #2563EB;
+  --secondary-violet: #7C3AED;
+  --accent-primary: #2563EB;
+  --accent-secondary: #7C3AED;
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --success: #10B981;
+  --danger: #F43F5E;
+  --warning: #F59E0B;
+  color-scheme: light;
+}
+
+html.dark {
   color-scheme: dark;
 }
 
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #0b0f19;
-  color: #f1f5f9;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {
@@ -19,18 +53,70 @@ body {
   flex-direction: column;
 }
 
-/* Custom scrollbars for data tables and logs */
+/* Cyber command grid pattern */
+.cyber-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+}
+
+.graph-canvas-grid {
+  background-size: 24px 24px;
+  background-image: 
+    radial-gradient(circle, rgba(124, 58, 237, 0.15) 1px, transparent 1px),
+    linear-gradient(to right, rgba(37, 50, 74, 0.3) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37, 50, 74, 0.3) 1px, transparent 1px);
+}
+
+/* Custom scrollbars for data tables, graph panels, and logs */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: var(--bg-main);
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--border-color);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #3b4d6b;
 }
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-ring {
+    animation: none;
+  }
+}
+
+/* Deep cyber dark world map filter matching Image 4 without watermarks */
+.dark-map-tiles .leaflet-tile-pane {
+  filter: brightness(0.65) invert(1) contrast(2.8) hue-rotate(205deg) saturate(0.4);
+}
+
+.leaflet-container {
+  background: #080D1B !important;
+}
+
+
