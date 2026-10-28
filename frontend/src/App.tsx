@@ -173,7 +173,7 @@ export function App() {
             <h2 className="text-base font-bold text-rose-200">Unable to Connect to Backend</h2>
             <p className="text-xs text-slate-400">{error}</p>
             <p className="text-xs text-slate-500 font-mono">
-              Ensure FastAPI backend is running on http://127.0.0.1:8000
+              Ensure FastAPI backend is running on http://127.0.0.1:8001
             </p>
             <button
               onClick={loadInitialData}
